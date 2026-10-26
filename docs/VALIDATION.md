@@ -20,7 +20,7 @@ The mod was also compiled against both the installed local-game and v3.3 dedicat
 
 ## Game integration status
 
-Dedicated-server startup and the sleeper filter were verified for 0.2.1. After testing the update, the owner confirmed the sleeper behavior worked as expected. Local-mode behavior is verified by the adapter harness and compilation against installed game APIs, but still requires in-game local HUD acceptance testing.
+Version 0.2.1 is a stable release. The owner confirmed successful gameplay testing on both a dedicated server and a locally hosted game, including the configurable sleeper behavior. Automated checks and compilation against both sets of game assemblies supplement that in-game validation.
 
 Validated on a v3.3.0 b18 dedicated test server:
 
@@ -32,7 +32,7 @@ Validated on a v3.3.0 b18 dedicated test server:
 
 A player reported working proximity indicators through Danger as a zombie approached, and subsequently confirmed the configurable sleeper behavior. Early chat-handler registration and a fallback prefix address conflicts with mods that consume slash commands. Multiplayer command privacy still requires acceptance testing.
 
-EAC-enabled startup is distinct from validating a real EAC client join. Console/crossplay compatibility is not established. Raw development logs and machine-specific test infrastructure are not distributed with the repository.
+Dedicated-server testing used EAC enabled; local-host installation requires EAC disabled. Console/crossplay compatibility is not established. Raw development logs and machine-specific test infrastructure are not distributed with the repository.
 
 ## Local-game acceptance checklist
 
@@ -60,4 +60,4 @@ Use a test dedicated server and an unmodified v3.3 PC client. Keep EAC enabled f
 9. Test hostile animal eligibility and exclusion of passive animals, players, and traders. With `includeSleepers=false`, dormant sleeping/passive hostiles should be ignored until activation. With true, they should count when loaded. Awake stationary hostiles should qualify without attacking in either mode.
 10. Check the server/client logs for errors and confirm UI readability at the player's usual scale and color settings. With two players, verify that one player's settings never alter the other player's indicators.
 
-Commands processed by earlier third-party mods may still be visible to those mods. Server-side command suppression does not erase administrative chat logs. EAC join, cross-client privacy, labels/icons, real buff replication, crash/restart recovery with saved characters, and console/crossplay support remain unverified until exercised on actual clients.
+These checklists support future regression testing; they are not a claim that every scenario was individually exercised. Commands processed by earlier third-party mods may still be visible to those mods, and server-side command suppression does not erase administrative chat logs. Cross-client command privacy, crash recovery with saved characters, and console/crossplay support have not been separately verified.

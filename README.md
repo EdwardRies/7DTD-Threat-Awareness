@@ -2,7 +2,7 @@
 
 A standalone C# accessibility mod for **7 Days to Die v3.3**, supporting singleplayer, locally hosted multiplayer, and dedicated servers. It shows nearby hostile proximity using four static vanilla buff icons. Local players are enabled automatically; remote players start with warnings **off** and can opt in with `/threat on`. No external services, database, Harmony patch, or dependency on another mod is used.
 
-This is a development build. Server startup and automated checks are separate from the client acceptance tests in [docs/VALIDATION.md](docs/VALIDATION.md). A missing indicator does not establish that an area is safe: detection covers eligible, currently loaded entities only.
+Version 0.2.1 has been tested on a dedicated server and in a locally hosted game. See [docs/VALIDATION.md](docs/VALIDATION.md) for validation coverage and regression checklists. A missing indicator does not establish that an area is safe: detection covers eligible, currently loaded entities only.
 
 Download an installable ZIP from the [GitHub releases](https://github.com/EdwardRies/7DTD-Threat-Awareness/releases), or build it from source using the instructions below.
 
@@ -104,7 +104,7 @@ The same package is used for local games and dedicated servers. Local gameplay a
 3. Start the server; check for `[ThreatAwareness] Ready` and any XML errors.
 4. Join using an unmodified PC client and complete the acceptance checks in `docs/VALIDATION.md`.
 
-The inspected loader permits dedicated-server DLLs with EAC enabled. Players joining a dedicated server do not need to install any mod files. Real client/EAC acceptance must still be checked. Console/crossplay compatibility is not established.
+Dedicated-server operation has been tested with EAC enabled. Players joining a dedicated server do not need to install any mod files. Local hosting requires EAC disabled. Console/crossplay compatibility is not established.
 
 To remove the mod, set `enabled="false"`, allow connected players' indicators to clear, then shut down and remove its folder. Players offline during removal may have saved indicators; safest cleanup is to retain the disabled mod through their next login before uninstalling. Shutdown and reconnect cleanup cannot clear offline character files. Do not remove another mod or edit player saves to clear indicators.
 
