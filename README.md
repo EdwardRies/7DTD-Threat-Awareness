@@ -77,12 +77,14 @@ Generated packages, build output, logs, and player/server data are excluded from
 
 ## Dedicated-server installation
 
-1. Shut down the dedicated server and back up its save/configuration.
+1. Shut down the dedicated server.
 2. Copy the complete `artifacts/0_ThreatAwareness` folder into the server's `Mods` folder. `ModInfo.xml`, `ThreatAwareness.dll`, and `ThreatAwareness.xml` must sit directly in `Mods/0_ThreatAwareness`; buff definitions are in `Config/buffs.xml`. When upgrading 0.1.0, replace the old `Mods/ThreatAwareness` folder with the new folder; do not leave both installed. Preserve any intentional administrator overrides while setting `defaultEnabled=false` for opt-in behavior. Preferences remain in the save and do not need migration.
 3. Start the server; check for `[ThreatAwareness] Ready` and any XML errors.
 4. Join using an unmodified PC client and complete the acceptance checks in `docs/VALIDATION.md`.
 
-This code runs only on dedicated servers. The inspected loader permits server DLLs with EAC enabled; client-side C# installation is neither supplied nor required. Real client/EAC acceptance must still be checked. Console/crossplay compatibility is not established.
+The current build explicitly disables its C# handlers outside a dedicated server. Installing it in a singleplayer or locally hosted game's `Mods` folder therefore does not enable detection. Supporting those modes would require adapting local-player identity and command handling and testing the host lifecycle; this is an implementation restriction, not an established limitation of the game engine.
+
+The inspected loader permits dedicated-server DLLs with EAC enabled; client-side C# installation is neither supplied nor required. Real client/EAC acceptance must still be checked. Console/crossplay compatibility is not established.
 
 To remove the mod, set `enabled="false"`, allow connected players' indicators to clear, then shut down and remove its folder. Players offline during removal may have saved indicators; safest cleanup is to retain the disabled mod through their next login before uninstalling. Shutdown and reconnect cleanup cannot clear offline character files. Do not remove another mod or edit player saves to clear indicators.
 
