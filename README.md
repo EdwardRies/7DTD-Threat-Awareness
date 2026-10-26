@@ -97,7 +97,7 @@ The same package is used for local games and dedicated servers. Local gameplay a
 3. Start the server; check for `[ThreatAwareness] Ready` and any XML errors.
 4. Join using an unmodified PC client and complete the acceptance checks in `docs/VALIDATION.md`.
 
-The inspected loader permits dedicated-server DLLs with EAC enabled; client-side C# installation is neither supplied nor required. Real client/EAC acceptance must still be checked. Console/crossplay compatibility is not established.
+The inspected loader permits dedicated-server DLLs with EAC enabled. Players joining a dedicated server do not need to install any mod files. Real client/EAC acceptance must still be checked. Console/crossplay compatibility is not established.
 
 To remove the mod, set `enabled="false"`, allow connected players' indicators to clear, then shut down and remove its folder. Players offline during removal may have saved indicators; safest cleanup is to retain the disabled mod through their next login before uninstalling. Shutdown and reconnect cleanup cannot clear offline character files. Do not remove another mod or edit player saves to clear indicators.
 
