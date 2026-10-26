@@ -22,7 +22,6 @@ namespace ThreatAwareness
 
         public void InitMod(Mod mod)
         {
-            if (!GameManager.IsDedicatedServer) { Log.Warning("[ThreatAwareness] Dedicated server only; code disabled on this host."); return; }
             configPath = Path.Combine(mod.Path, "ThreatAwareness.xml");
             ModEvents.GameStartDone.RegisterHandler(OnStart);
             ModEvents.GameUpdate.RegisterHandler(OnUpdate);
@@ -31,25 +30,32 @@ namespace ThreatAwareness
             ModEvents.PlayerDisconnected.RegisterHandler(OnDisconnect);
             ModEvents.EntityKilled.RegisterHandler(OnKilled);
             ModEvents.WorldShuttingDown.RegisterHandler(OnShutdown);
-            Log.Out("[ThreatAwareness] Registered v3.3 server-only handlers.");
+            Log.Out("[ThreatAwareness] Registered v3.3 host handlers.");
         }
 
         private void OnStart(ref ModEvents.SGameStartDoneData data)
         {
+            // One installed mod instance can visit several local or remote worlds.
+            ready = false;
+            preferences = null;
+            states.Clear();
+            while (pending.TryDequeue(out _)) { }
+            configText = null;
+            settings = new Settings();
+            nextDetection = nextConfig = 0;
+            if (AuthoritativeWorld == null) return;
             try
             {
-                preferences = new Preferences(Path.Combine(GameIO.GetSaveGameDir(), "ThreatAwareness", "preferences.xml"), Warn);
                 ReloadConfig();
                 ready = true;
-                nextDetection = 0;
-                Log.Out("[ThreatAwareness] Ready. Players: /threat. Preferences: " + GameIO.GetSaveGameDir() + "/ThreatAwareness/preferences.xml");
+                Log.Out("[ThreatAwareness] Ready. Local players participate automatically; remote players: /threat.");
             }
             catch (Exception ex) { Warn("Startup failed; detection disabled: " + ex.Message); }
         }
 
         private ModEvents.EModEventResult OnChat(ref ModEvents.SChatMessageData data)
         {
-            if (data.ClientInfo == null || !PlayerCommand.TryParse(data.Message, out var action)) return ModEvents.EModEventResult.Continue;
+            if (AuthoritativeWorld == null || data.ClientInfo == null || !PlayerCommand.TryParse(data.Message, out var action)) return ModEvents.EModEventResult.Continue;
             var client = data.ClientInfo;
             // Only the authenticated sending connection can change its own preference.
             pending.Enqueue(() => HandleCommand(client, action));
@@ -62,6 +68,8 @@ namespace ThreatAwareness
             if (!ready) { Reply(client, "Threat Awareness is unavailable."); return; }
             if (action == "help" || (action != "on" && action != "off" && action != "status"))
             { Reply(client, "Threat Awareness shows nearby hostiles based on proximity\n/threat on\n/threat off\n/threat status"); return; }
+            if (IsLocalHostPlayer(Player(client)))
+            { Reply(client, StateMessage(settings.Enabled)); return; }
             string id = client.InternalId?.CombinedString;
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -72,14 +80,14 @@ namespace ThreatAwareness
             }
             if (action == "status")
             {
-                bool enabled = preferences.Get(id, settings.DefaultEnabled);
+                bool enabled = RemotePreferences.Get(id, settings.DefaultEnabled);
                 Reply(client, StateMessage(enabled && settings.Enabled));
                 return;
             }
             bool on = action == "on";
             // Remove before disk I/O, independently of the detection timer.
             if (!on) Clear(Player(client));
-            bool saved = preferences.Set(id, on);
+            bool saved = RemotePreferences.Set(id, on);
             if (!saved) Warn("Player preference could not be persisted; the choice applies in memory for this session.");
             Reply(client, StateMessage(on && settings.Enabled));
         }
@@ -88,17 +96,17 @@ namespace ThreatAwareness
 
         private void OnUpdate(ref ModEvents.SGameUpdateData data)
         {
+            var world = AuthoritativeWorld;
+            // Never calculate threats or change replicated buffs in a remote server's world.
+            if (!ready || world == null) return;
             // Network/lifecycle callbacks only queue work. All world access is on GameUpdate.
             int count = 0;
             while (count++ < 256 && pending.TryDequeue(out var work))
                 try { work(); } catch (Exception ex) { Warn("Command/lifecycle action failed: " + ex.Message); }
-            if (!ready) return;
             double now = clock.Elapsed.TotalSeconds;
             if (now >= nextConfig) { nextConfig = now + 1; ReloadConfig(); }
             if (now < nextDetection) return;
             nextDetection = now + settings.IntervalSeconds;
-            var world = GameManager.Instance.World;
-            if (world == null) return;
             var players = world.Players.list;
             for (int i = 0; i < players.Count; i++)
             {
@@ -106,9 +114,7 @@ namespace ThreatAwareness
                 if (player == null) continue;
                 try
                 {
-                    var client = ConnectionManager.Instance.Clients.ForEntityId(player.entityId);
-                    string id = client?.InternalId?.CombinedString;
-                    if (!settings.Enabled || !Current(client) || string.IsNullOrWhiteSpace(id) || !preferences.Get(id, settings.DefaultEnabled) ||
+                    if (!settings.Enabled || !Participates(player) ||
                         player.IsDead() || player.IsDespawned || player.isUnloaded || player.markedForUnload || !player.IsSpawned() || player.IsSpectator || settings.Range <= 0)
                     { Clear(player); continue; }
                     var previous = states.TryGetValue(player.entityId, out var old) ? old : ThreatLevel.None;
@@ -117,6 +123,29 @@ namespace ThreatAwareness
                 catch (Exception ex) { Clear(player); Warn("Player detection failed; indicator cleared: " + ex.Message); }
             }
         }
+
+        private static World AuthoritativeWorld
+        {
+            get
+            {
+                var world = GameManager.Instance?.World;
+                return world != null && !world.IsRemote() ? world : null;
+            }
+        }
+
+        // A pure singleplayer session never opens the remote-player preference store.
+        private Preferences RemotePreferences => preferences ?? (preferences = new Preferences(
+            Path.Combine(GameIO.GetSaveGameDir(), "ThreatAwareness", "preferences.xml"), Warn));
+
+        private bool Participates(EntityPlayer player)
+        {
+            if (IsLocalHostPlayer(player)) return true;
+            var client = ConnectionManager.Instance?.Clients.ForEntityId(player.entityId);
+            string id = client?.InternalId?.CombinedString;
+            return Current(client) && !string.IsNullOrWhiteSpace(id) && RemotePreferences.Get(id, settings.DefaultEnabled);
+        }
+
+        private static bool IsLocalHostPlayer(EntityPlayer player) => !GameManager.IsDedicatedServer && player is EntityPlayerLocal;
 
         private double Nearest(World world, EntityPlayer player)
         {
@@ -146,18 +175,20 @@ namespace ThreatAwareness
 
         private void SetBuff(EntityPlayer player, ThreatLevel desired)
         {
+            // The local host's UI reads its own buff state; no network round trip is needed.
+            bool netSync = !(player is EntityPlayerLocal);
             for (int i = 1; i < BuffNames.Length; i++)
             {
                 var buff = player.Buffs.GetBuff(BuffNames[i]);
                 bool active = buff != null && !buff.Remove;
-                if (i != (int)desired && active) player.Buffs.RemoveBuff(BuffNames[i]);
+                if (i != (int)desired && active) player.Buffs.RemoveBuff(BuffNames[i], _netSync: netSync);
             }
             if (desired != ThreatLevel.None)
             {
                 var buff = player.Buffs.GetBuff(BuffNames[(int)desired]);
                 if (buff == null || buff.Remove)
                 {
-                    var result = player.Buffs.AddBuff(BuffNames[(int)desired]);
+                    var result = player.Buffs.AddBuff(BuffNames[(int)desired], _netSync: netSync);
                     if (result != EntityBuffs.BuffStatus.Added) throw new InvalidOperationException("Cannot apply " + BuffNames[(int)desired] + ": " + result);
                 }
             }
@@ -173,11 +204,13 @@ namespace ThreatAwareness
 
         private void OnSpawn(ref ModEvents.SPlayerSpawnedInWorldData data)
         {
+            if (AuthoritativeWorld == null) return;
             int id = data.EntityId;
             pending.Enqueue(() => { states.Remove(id); Clear(GameManager.Instance?.World?.GetEntity(id) as EntityPlayer); });
         }
         private void OnDisconnect(ref ModEvents.SPlayerDisconnectedData data)
         {
+            if (AuthoritativeWorld == null) return;
             var client = data.ClientInfo;
             if (client == null) return;
             int id = client.entityId;
@@ -185,6 +218,7 @@ namespace ThreatAwareness
         }
         private void OnKilled(ref ModEvents.SEntityKilledData data)
         {
+            if (AuthoritativeWorld == null) return;
             var player = data.KilledEntitiy as EntityPlayer;
             if (player != null) pending.Enqueue(() => Clear(player));
         }
@@ -192,12 +226,13 @@ namespace ThreatAwareness
         {
             ready = false;
             ClearAll();
+            preferences = null;
             states.Clear();
             while (pending.TryDequeue(out _)) { }
         }
         private void ClearAll()
         {
-            var players = GameManager.Instance?.World?.Players.list;
+            var players = AuthoritativeWorld?.Players.list;
             if (players == null) return;
             for (int i = 0; i < players.Count; i++)
                 try { Clear(players[i]); } catch (Exception ex) { Warn("Cleanup failed: " + ex.Message); }

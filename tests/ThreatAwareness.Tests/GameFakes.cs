@@ -13,6 +13,7 @@ public static class GameIO { public static string SavePath; public static string
 public class GameManager { public static bool IsDedicatedServer=true; public static GameManager Instance=new GameManager(); public World World=new World(); }
 public class World
 {
+    public bool Remote; public bool IsRemote()=>Remote;
     public class PlayerList { public List<EntityPlayer> list=new List<EntityPlayer>(); }
     public PlayerList Players=new PlayerList(); public List<Entity> Entities=new List<Entity>(); public int Queries;
     public Entity GetEntity(int id) => Entities.Find(e=>e.entityId==id);
@@ -31,6 +32,7 @@ public class Entity
 }
 public class EntityAlive : Entity { public EntityBuffs Buffs=new EntityBuffs(); }
 public class EntityPlayer : EntityAlive { public bool IsSpectator; }
+public class EntityPlayerLocal : EntityPlayer { }
 public class EntityZombie : EntityAlive { }
 public class EntityAnimal : EntityAlive { }
 public class EntityClass
@@ -43,10 +45,10 @@ public class BuffValue { public bool Remove; }
 public class EntityBuffs
 {
     public enum BuffStatus { Added }
-    public Dictionary<string,BuffValue> All=new Dictionary<string,BuffValue>(); public int Adds,Removes;
+    public Dictionary<string,BuffValue> All=new Dictionary<string,BuffValue>(); public int Adds,Removes,NetworkAdds,NetworkRemoves;
     public BuffValue GetBuff(string name)=>All.TryGetValue(name,out var b)?b:null;
-    public BuffStatus AddBuff(string name) { Adds++; All[name]=new BuffValue(); return BuffStatus.Added; }
-    public void RemoveBuff(string name) { Removes++; All[name].Remove=true; }
+    public BuffStatus AddBuff(string name, int _instigatorId=-1, bool _netSync=true) { Adds++; if(_netSync) NetworkAdds++; All[name]=new BuffValue(); return BuffStatus.Added; }
+    public void RemoveBuff(string name, int _instigatorId=-1, bool _netSync=true) { Removes++; if(_netSync) NetworkRemoves++; All[name].Remove=true; }
 }
 public class PlatformUserIdentifierAbs { public string CombinedString; }
 public class ClientInfo

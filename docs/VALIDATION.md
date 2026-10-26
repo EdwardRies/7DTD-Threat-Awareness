@@ -8,13 +8,17 @@ Run from the repository root:
 dotnet run --project tests/ThreatAwareness.Tests -c Release
 ```
 
-All **89 checks passed** for version 0.1.2. They cover threshold boundaries, nearest-hostile selection, hysteresis, disabled levels, invalid configuration, command parsing, exact private command replies, preference persistence and corrupt-file recovery, independent player settings, death/respawn/reconnect cleanup, and the absence of gameplay effects in buff XML.
+All **116 checks passed** for version 0.2.0. They cover threshold boundaries, nearest-hostile selection, hysteresis, disabled levels, invalid configuration, command parsing, exact private command replies, preference persistence and corrupt-file recovery, independent player settings, death/respawn/reconnect cleanup, and the absence of gameplay effects in buff XML.
 
 The adapter harness uses controlled game doubles. It reproduces interference from an earlier slash-chat handler and tests the fallback prefix, opt-in defaults, and exclusion of disabled players from proximity calculations. It does not establish real game networking, Unity threading, graphics, or anti-cheat compatibility.
 
-The mod was also compiled against the actual v3.3 dedicated-server assemblies with .NET Framework 4.8: zero warnings and zero errors.
+Local-mode regression checks cover automatic participation without a client identity or preference store, direct local buff updates without network sends, no repeated identical buffs, proximity transitions, death/respawn, global disable, disabled levels, independent co-op guest preferences, ignoring a saved local opt-out, world-exit cleanup, and returning from a remote server to a local world. Remote-client checks confirm that detection, command interception, and lifecycle buff changes stay inactive in someone else's world.
+
+The mod was also compiled against both the installed local-game and v3.3 dedicated-server assemblies with .NET Framework 4.8: zero warnings and zero errors.
 
 ## Game integration status
+
+The dedicated-server runtime checks below were completed for 0.1.x. Version 0.2.0's local-mode behavior is verified by the adapter harness and compilation against the installed game APIs, but still requires testing in a running singleplayer/local-host world. No claim of in-game local HUD validation is made.
 
 Validated on a v3.3.0 b18 dedicated test server:
 
@@ -28,7 +32,17 @@ A player reported working proximity indicators through Danger as a zombie approa
 
 EAC-enabled startup is distinct from validating a real EAC client join. Console/crossplay compatibility is not established. Raw development logs and machine-specific test infrastructure are not distributed with the repository.
 
-## Client acceptance checklist
+## Local-game acceptance checklist
+
+Use the release package in the local game's `Mods` folder with EAC disabled.
+
+1. Start a singleplayer world with the supplied configuration. Do not enter any command. Verify that an approaching zombie produces Caution through Danger despite `defaultEnabled=false`.
+2. Verify only one indicator is active, transitions remain responsive, and it clears when threats leave. Test death/respawn and returning to the menu and reopening the world.
+3. Set `enabled=false`: all indicators should clear. Re-enable it: automatic detection should resume. Confirm distance, interval, disabled levels, and entity eligibility still apply.
+4. Host co-op with one guest. The local host should be automatic; the guest should start off and be able to opt in/out independently. Confirm host buffs update locally and guest buffs replicate. The host can see guest commands in its local chat UI; other guests should not receive them.
+5. Leave the local world and join a server without this mod. Confirm the locally installed mod performs no detection and adds no warnings. Return to a local world and confirm automatic detection resumes.
+
+## Dedicated-server client acceptance checklist
 
 Use a test dedicated server and an unmodified v3.3 PC client. Keep EAC enabled for this check. No client mod files should be installed.
 

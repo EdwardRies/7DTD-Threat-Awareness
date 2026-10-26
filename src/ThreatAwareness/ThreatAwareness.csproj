@@ -4,7 +4,7 @@
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <AssemblyName>ThreatAwareness</AssemblyName>
-    <Version>0.1.2</Version>
+    <Version>0.2.0</Version>
     <AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages>
   </PropertyGroup>
   <ItemGroup>
@@ -14,7 +14,7 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <Target Name="ValidateGameReferences" BeforeTargets="ResolveReferences">
-    <Error Condition="'$(GameManagedDir)' == ''" Text="Set GameManagedDir to your dedicated server's 7DaysToDieServer_Data/Managed folder, or use build.ps1 -GameDir with your server installation path." />
-    <Error Condition="'$(GameManagedDir)' != '' and !Exists('$(GameManagedDir)/Assembly-CSharp.dll')" Text="Assembly-CSharp.dll was not found in GameManagedDir. A v3.3 dedicated server installation is required." />
+    <Error Condition="'$(GameManagedDir)' == ''" Text="Set GameManagedDir to the game's Managed folder, or use build.ps1 -GameDir with your game or dedicated server installation path." />
+    <Error Condition="'$(GameManagedDir)' != '' and !Exists('$(GameManagedDir)/Assembly-CSharp.dll')" Text="Assembly-CSharp.dll was not found in GameManagedDir. A v3.3 game or dedicated server installation is required." />
   </Target>
 </Project>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Reloaded within one second. Invalid changes retain the last valid settings.
-     Player preferences override defaultEnabled; enabled=false overrides everyone.
+     Local host players participate automatically. Remote-player preferences
+     override defaultEnabled; enabled=false overrides everyone.
      intervalSeconds: 0.1..60; hysteresisMeters: 0..2; meters: >0..250.
      Thresholds must be strictly descending, including disabled levels. -->
 <ThreatAwareness enabled="true" defaultEnabled="false" intervalSeconds="1" hysteresisMeters="1">

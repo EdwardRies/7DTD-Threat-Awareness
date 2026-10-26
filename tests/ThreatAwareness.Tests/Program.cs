@@ -131,6 +131,66 @@ try
     Reload(originalConfig.Replace("<!-- <Exclude class=\"animalSnake\" /> -->","<Exclude class=\"hostileAnimal\" />"));Check(Active(p)==0,"exact hostile class exclusion");
     Reload(originalConfig);ModEvents.WorldShuttingDown.Fire(new());Check(Active(p)==0&&Active(p2)==0,"shutdown clears all indicators");
 
+    // Singleplayer: no authenticated client, preference file, or networking is needed.
+    File.Copy(Path.GetFullPath("Mods/ThreatAwareness/ThreatAwareness.xml"),config,true);
+    GameManager.IsDedicatedServer=false;
+    ConnectionManager.Instance=null;
+    GameIO.SavePath=Path.Combine(temp,"local-save");
+    var localWorld=new World();GameManager.Instance.World=localWorld;
+    var local=new EntityPlayerLocal {entityId=10};
+    var localZombie=new EntityZombie {entityId=11,entityClass=1,position=new(8,0,0)};
+    localWorld.Players.list.Add(local);localWorld.Entities.AddRange(new Entity[]{local,localZombie});
+    ModEvents.GameStartDone.Fire(new());Cycle();
+    Check(Has(local,"taDanger")&&Active(local)==1,"singleplayer automatically participates despite default off and no client connection");
+    Check(!Directory.Exists(GameIO.SavePath)&&typeof(ModApi).GetField("preferences",BindingFlags.NonPublic|BindingFlags.Instance).GetValue(api)==null,"singleplayer does not open the preference store");
+    Check(local.Buffs.NetworkAdds==0,"local buff applies directly without a network send");
+    adds=local.Buffs.Adds;Cycle();Check(local.Buffs.Adds==adds,"local unchanged buff is not reapplied");
+    Check(ModEvents.ChatMessage.Fire(new(){Message="!threat off"})==ModEvents.EModEventResult.Continue,"identity less local chat does not change participation");
+    Cycle();Check(Has(local,"taDanger"),"local participation remains automatic without commands");
+    localZombie.position=new(40,0,0);Cycle();Check(Has(local,"taWarning")&&Active(local)==1,"local proximity transition keeps exactly one buff");
+    localZombie.position=new(101,0,0);Cycle();Check(Active(local)==0&&local.Buffs.NetworkRemoves==0,"local no threats clears directly without a network send");
+    localZombie.position=new(8,0,0);Cycle();local.Dead=true;
+    ModEvents.EntityKilled.Fire(new(){KilledEntitiy=local});ModEvents.GameUpdate.Fire(new());Check(Active(local)==0,"local death clears indicator");
+    local.Dead=false;ModEvents.PlayerSpawnedInWorld.Fire(new(){EntityId=10});Cycle();Check(Has(local,"taDanger"),"local respawn automatically resumes");
+    var localConfig=File.ReadAllText(config);
+    Reload(localConfig.Replace("enabled=\"true\" defaultEnabled","enabled=\"false\" defaultEnabled"));
+    Check(Active(local)==0,"global disable overrides automatic local participation");
+    Reload(localConfig);Check(Has(local,"taDanger"),"global enable restores local indicator");
+    int localQueries=localWorld.Queries;
+    Reload(localConfig.Replace("enabled=\"true\" meters","enabled=\"false\" meters"));
+    Check(Active(local)==0&&localWorld.Queries==localQueries,"all disabled levels skip local proximity queries");
+    Reload(localConfig);
+    // A local co-op host is automatic; guests retain independent remote preferences.
+    ConnectionManager.Instance=new ConnectionManager();
+    var guest=new EntityPlayer {entityId=20};localWorld.Players.list.Add(guest);localWorld.Entities.Add(guest);
+    var guestClient=Client(20,"EOS_Guest");Cycle();
+    Check(Has(local,"taDanger")&&Active(guest)==0,"co-op guest stays opted out while host is automatic");
+    Command(guestClient,"/threat on");Cycle();
+    Check(Has(guest,"taDanger")&&Has(local,"taDanger")&&guest.Buffs.NetworkAdds>0,"co-op guest opt in keeps network synchronization");
+    Command(guestClient,"/threat off");Check(Active(guest)==0&&Has(local,"taDanger"),"guest opt out cannot disable the local host");
+    var savedLocalPreference=new Preferences(Path.Combine(GameIO.SavePath,"ThreatAwareness","preferences.xml"),_=>{});
+    savedLocalPreference.Set("EOS_Local",false);var localClient=Client(10,"EOS_Local");Cycle();
+    Check(Has(local,"taDanger"),"saved remote opt out does not override automatic local host");
+    Command(localClient,"/threat off");Check(Has(local,"taDanger")&&localClient.Replies.Last()=="Threat Awareness is on.","a local host client entry cannot disable automatic participation");
+    ModEvents.WorldShuttingDown.Fire(new());Check(Active(local)==0,"local world exit clears indicator");
+    // An installed client joining another server must never detect or modify its buffs.
+    var remoteWorld=new World {Remote=true};GameManager.Instance.World=remoteWorld;
+    var remoteLocal=new EntityPlayerLocal {entityId=30};remoteLocal.Buffs.AddBuff("taDanger",_netSync:false);
+    remoteWorld.Players.list.Add(remoteLocal);remoteWorld.Entities.Add(remoteLocal);
+    ModEvents.GameStartDone.Fire(new());Cycle();
+    Check(remoteWorld.Queries==0&&Has(remoteLocal,"taDanger"),"remote server join performs no detection and leaves replicated buffs alone");
+    int replies=guestClient.Replies.Count;
+    Check(ModEvents.ChatMessage.Fire(new(){ClientInfo=guestClient,Message="!threat on"})==ModEvents.EModEventResult.Continue,"remote client does not intercept server commands");
+    ModEvents.PlayerSpawnedInWorld.Fire(new(){EntityId=30});ModEvents.EntityKilled.Fire(new(){KilledEntitiy=remoteLocal});
+    Cycle();ModEvents.WorldShuttingDown.Fire(new());
+    Check(Has(remoteLocal,"taDanger")&&remoteLocal.Buffs.Removes==0&&guestClient.Replies.Count==replies,"remote spawn death and exit never mutate replicated buff state or send replies");
+    // The same mod instance can return from a remote server into a new local world.
+    GameManager.Instance.World=localWorld;
+    File.WriteAllText(config,localConfig.Replace("enabled=\"true\" defaultEnabled","enabled=\"false\" defaultEnabled"));
+    ModEvents.GameStartDone.Fire(new());Cycle();Check(Active(local)==0,"new local session reloads current global configuration");
+    Reload(localConfig);Check(Has(local,"taDanger"),"return from remote play resumes local automatic detection");
+    ModEvents.WorldShuttingDown.Fire(new());
+
     var xml=XDocument.Load("Mods/ThreatAwareness/Config/buffs.xml");var buffs=xml.Descendants("buff").ToArray();
     Check(buffs.Length==4&&buffs.Select(b=>(string)b.Attribute("icon")).Distinct().Count()==4,"four distinct icons");
     Check(!xml.Descendants("effect_group").Any()&&!xml.Descendants("passive_effect").Any()&&!xml.Descendants("triggered_effect").Any(),"buff definitions have no gameplay effects");
