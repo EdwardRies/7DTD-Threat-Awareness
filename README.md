@@ -100,7 +100,7 @@ The same package is used for local games and dedicated servers. Local gameplay a
 ## Dedicated-server installation
 
 1. Shut down the dedicated server.
-2. Copy the complete `artifacts/0_ThreatAwareness` folder into the server's `Mods` folder. `ModInfo.xml`, `ThreatAwareness.dll`, and `ThreatAwareness.xml` must sit directly in `Mods/0_ThreatAwareness`; buff definitions are in `Config/buffs.xml`. When upgrading 0.1.0, replace the old `Mods/ThreatAwareness` folder with the new folder; do not leave both installed. Preserve any intentional administrator overrides while setting `defaultEnabled=false` for opt-in behavior. Preferences remain in the save and do not need migration.
+2. Copy the complete `artifacts/0_ThreatAwareness` folder into the server's `Mods` folder. `ModInfo.xml`, `ThreatAwareness.dll`, and `ThreatAwareness.xml` must sit directly in `Mods/0_ThreatAwareness`; buff definitions are in `Config/buffs.xml`. When upgrading, replace the existing mod files, retain your configuration, and avoid duplicate installations. Preferences remain in the save and do not need migration.
 3. Start the server; check for `[ThreatAwareness] Ready` and any XML errors.
 4. Join using an unmodified PC client and complete the acceptance checks in `docs/VALIDATION.md`.
 

@@ -20,7 +20,7 @@ The mod was also compiled against both the installed local-game and v3.3 dedicat
 
 ## Game integration status
 
-Dedicated-server startup was verified through 0.2.0. Local-mode behavior and the 0.2.1 sleeper filter are verified by the adapter harness and compilation against installed game APIs, but still require in-game local/POI acceptance testing. No claim of in-game local HUD or sleeper-state validation is made.
+Dedicated-server startup and the sleeper filter were verified for 0.2.1. After testing the update, the owner confirmed the sleeper behavior worked as expected. Local-mode behavior is verified by the adapter harness and compilation against installed game APIs, but still requires in-game local HUD acceptance testing.
 
 Validated on a v3.3.0 b18 dedicated test server:
 
@@ -28,9 +28,9 @@ Validated on a v3.3.0 b18 dedicated test server:
 - Loading all four buff definitions into the game's merged configuration.
 - EAC-enabled server startup and successful server registration.
 - Valid configuration reloads, global disable, and rejection of overlapping thresholds.
-- Clean server shutdown and subsequent startup with version 0.1.2.
+- Clean server shutdown and subsequent startup with version 0.2.1.
 
-A player reported working proximity indicators through Danger as a zombie approached. The initial chat-command conflict was traced to an earlier mod consuming slash commands; early registration and a fallback prefix were added. The current command wording and multiplayer command privacy still require client acceptance testing.
+A player reported working proximity indicators through Danger as a zombie approached, and subsequently confirmed the configurable sleeper behavior. Early chat-handler registration and a fallback prefix address conflicts with mods that consume slash commands. Multiplayer command privacy still requires acceptance testing.
 
 EAC-enabled startup is distinct from validating a real EAC client join. Console/crossplay compatibility is not established. Raw development logs and machine-specific test infrastructure are not distributed with the repository.
 
