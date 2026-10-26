@@ -54,8 +54,15 @@ Edit `Mods/0_ThreatAwareness/ThreatAwareness.xml`. The mod checks for changes ev
 - `hysteresisMeters`: 0 to 2 (default 1); de-escalation tolerance only. Escalation is immediate at the next cycle. Warnings always clear beyond the largest enabled range.
 - Each of the four `Levels` has `enabled` and `meters`. All distances must be >0 and <=250 and strictly ordered Caution > Warning > HighWarning > Danger, including disabled levels. Invalid or overlapping values reject the edit as a whole.
 - `Eligibility zombies` and `hostileAnimals`: enable the two supported categories. Both also require the entity class's `IsEnemyEntity` flag. Optional `Exclude class="..."` entries exclude exact entity class names.
+- `Eligibility includeSleepers`: false by default. Sleeping or passive POI hostiles are ignored until they wake or activate. Set it to true to include them again. Missing settings also default to false, so existing configurations adopt the new behavior automatically.
 
-Players, traders, other NPC categories, and passive animals are excluded. Zombies and hostile animals can qualify without attacking or seeing the player. Modded friendly entities incorrectly marked as enemy should be explicitly excluded. There is no line-of-sight check; distance includes height. Disabled participants receive no proximity query. If all levels are disabled, no proximity queries run.
+```xml
+<Eligibility zombies="true" hostileAnimals="true" includeSleepers="false">
+  <!-- Optional exact entity-class exclusions go here. -->
+</Eligibility>
+```
+
+Players, traders, other NPC categories, and passive animals are excluded. Awake zombies and hostile animals qualify even while standing still, without attacking or seeing the player. Detection uses proximity and entity state, not actual audio playback. Modded friendly entities incorrectly marked as enemy should be explicitly excluded. There is no line-of-sight check; distance includes height. Disabled participants receive no proximity query. If all levels are disabled, no proximity queries run.
 
 ## Preferences and recovery
 
@@ -71,7 +78,7 @@ Requires a .NET SDK supporting `net10.0` tests, **.NET Framework 4.8 developer/r
 .\build.ps1 -GameDir 'D:\Games\7DaysToDieServer'
 ```
 
-The script accepts either a game or dedicated-server installation, compiles against its assemblies, runs the tests, and creates `artifacts/0_ThreatAwareness/` and `artifacts/ThreatAwareness-0.2.0.zip`. The source assets remain under `Mods/ThreatAwareness/`; the build gives the installation folder its load-order prefix. Tests are a dependency-free executable; any failing assertion exits unsuccessfully. The game adapter is compiled against the real game DLL separately from its test harness.
+The script accepts either a game or dedicated-server installation, compiles against its assemblies, runs the tests, and creates `artifacts/0_ThreatAwareness/` and `artifacts/ThreatAwareness-0.2.1.zip`. The source assets remain under `Mods/ThreatAwareness/`; the build gives the installation folder its load-order prefix. Tests are a dependency-free executable; any failing assertion exits unsuccessfully. The game adapter is compiled against the real game DLL separately from its test harness.
 
 Supply your own installation path; no machine-specific path is configured in the project. To run the tests without a game installation:
 

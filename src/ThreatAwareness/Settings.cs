@@ -21,6 +21,7 @@ namespace ThreatAwareness
         public readonly bool[] Levels = { false, true, true, true, true };
         public bool Zombies = true;
         public bool HostileAnimals = true;
+        public bool IncludeSleepers = false;
         public readonly HashSet<string> ExcludedClasses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public double Range
@@ -60,6 +61,7 @@ namespace ThreatAwareness
             {
                 s.Zombies = Bool(eligibility, "zombies", true);
                 s.HostileAnimals = Bool(eligibility, "hostileAnimals", true);
+                s.IncludeSleepers = Bool(eligibility, "includeSleepers", false);
                 foreach (var e in eligibility.Elements("Exclude"))
                 {
                     var name = (string)e.Attribute("class");

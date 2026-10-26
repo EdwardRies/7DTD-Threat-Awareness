@@ -10,6 +10,7 @@ try
 {
     var s=new Settings { HysteresisMeters=0 };
     Check(!s.DefaultEnabled,"built in preference defaults off");
+    Check(!s.IncludeSleepers&&!Settings.Load(Path.Combine(temp,"missing.xml")).IncludeSleepers,"dormant sleepers default off including missing config");
     Check(!Settings.Load(Path.Combine(temp,"missing.xml")).DefaultEnabled,"missing config defaults off");
     foreach(var pair in new[]{(100d,ThreatLevel.Caution),(50d,ThreatLevel.Warning),(25d,ThreatLevel.HighWarning),(10d,ThreatLevel.Danger),(100.001,ThreatLevel.None),(0d,ThreatLevel.Danger)})
         Check(ThreatEvaluator.Evaluate(pair.Item1,ThreatLevel.None,s)==pair.Item2,"boundary "+pair.Item1);
@@ -26,6 +27,11 @@ try
     Check(ThreatEvaluator.Evaluate(8,ThreatLevel.Danger,s)==ThreatLevel.None,"global disable wins");
     var config=Path.Combine(temp,"ThreatAwareness.xml");
     File.WriteAllText(config,"<ThreatAwareness/>");Check(!Settings.Load(config).DefaultEnabled,"omitted preference default is off");
+    Check(!Settings.Load(config).IncludeSleepers,"omitted sleeper option defaults off");
+    File.WriteAllText(config,"<ThreatAwareness><Eligibility includeSleepers='true'/></ThreatAwareness>");Check(Settings.Load(config).IncludeSleepers,"XML can include dormant sleepers");
+    File.WriteAllText(config,"<ThreatAwareness><Eligibility includeSleepers='false'/></ThreatAwareness>");Check(!Settings.Load(config).IncludeSleepers,"XML can exclude dormant sleepers");
+    File.WriteAllText(config,"<ThreatAwareness><Eligibility includeSleepers='invalid'/></ThreatAwareness>");
+    try { Settings.Load(config); Check(false,"invalid sleeper toggle rejected"); } catch(FormatException) { Check(true,"invalid sleeper toggle rejected"); }
     File.WriteAllText(config,"<ThreatAwareness><Levels><Danger meters='50'/></Levels></ThreatAwareness>");
     try { Settings.Load(config); Check(false,"overlap rejected"); } catch(FormatException) { Check(true,"overlap rejected"); }
     foreach(string invalid in new[]{"NaN","Infinity","0","251"})
@@ -98,6 +104,14 @@ try
     typeof(ModApi).GetField("nextConfig",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(api,0d);
     Cycle();Check(Has(p,"taDanger")&&Active(p)==1,"nearest of simultaneous hostiles wins");
     int adds=p.Buffs.Adds;Cycle();Check(p.Buffs.Adds==adds,"unchanged buff not reapplied");
+    near.IsSleeper=true;near.IsSleeping=true;Cycle();Check(Has(p,"taWarning")&&near.IsSleeping,"sleeping nearest zombie excluded without waking it; awake threat still counts");
+    near.IsSleeping=false;near.IsSleeperPassive=true;Cycle();Check(Has(p,"taWarning"),"passive POI sleeper excluded even when not flagged sleeping");
+    near.IsSleeping=true;Cycle();Check(Has(p,"taWarning"),"combined sleeping and passive flags excluded");
+    near.IsSleeping=false;near.IsSleeperPassive=false;Cycle();Check(Has(p,"taDanger")&&near.IsSleeper,"awakened POI zombie counts while stationary and still marked IsSleeper");
+    foreach(var zombie in world.Entities.OfType<EntityZombie>()) zombie.IsSleeping=true;
+    Cycle();Check(Active(p)==0,"all dormant threats clear indicator");
+    foreach(var zombie in world.Entities.OfType<EntityZombie>()) zombie.IsSleeping=false;
+    Cycle();Check(Has(p,"taDanger"),"waking hostiles qualify on the next cycle");
     int queryBefore=world.Queries;Command(c1,"/threat off");Check(Active(p)==0&&Has(p2,"taDanger"),"off clears immediately and isolates other player");
     Check(c1.Replies.Last()=="Threat Awareness is off.","off reply has no extra text");
     Command(c1,"/threat status");Check(c1.Replies.Last()=="Threat Awareness is off.","status reports off concisely");
@@ -153,6 +167,13 @@ try
     ModEvents.EntityKilled.Fire(new(){KilledEntitiy=local});ModEvents.GameUpdate.Fire(new());Check(Active(local)==0,"local death clears indicator");
     local.Dead=false;ModEvents.PlayerSpawnedInWorld.Fire(new(){EntityId=10});Cycle();Check(Has(local,"taDanger"),"local respawn automatically resumes");
     var localConfig=File.ReadAllText(config);
+    localZombie.IsSleeping=true;Cycle();Check(Active(local)==0,"local game also excludes sleeping hostiles by default");
+    Reload(localConfig.Replace("includeSleepers=\"false\"","includeSleepers=\"true\""));Check(Has(local,"taDanger"),"live sleeper toggle includes sleeping hostiles");
+    Reload(localConfig.Replace("includeSleepers=\"false\"","includeSleepers=\"invalid\""));Check(Has(local,"taDanger"),"invalid sleeper edit retains the last valid inclusion setting");
+    Reload(localConfig);Check(Active(local)==0,"live sleeper exclusion clears an existing indicator");
+    localZombie.IsSleeping=false;localZombie.IsSleeperPassive=true;Cycle();Check(Active(local)==0,"local passive sleeper excluded");
+    Reload(localConfig.Replace("includeSleepers=\"false\"","includeSleepers=\"true\""));Check(Has(local,"taDanger"),"sleeper toggle also includes passive hostiles");
+    Reload(localConfig);localZombie.IsSleeperPassive=false;localZombie.IsSleeper=true;Cycle();Check(Has(local,"taDanger"),"local awake stationary POI zombie qualifies after activation");
     Reload(localConfig.Replace("enabled=\"true\" defaultEnabled","enabled=\"false\" defaultEnabled"));
     Check(Active(local)==0,"global disable overrides automatic local participation");
     Reload(localConfig);Check(Has(local,"taDanger"),"global enable restores local indicator");

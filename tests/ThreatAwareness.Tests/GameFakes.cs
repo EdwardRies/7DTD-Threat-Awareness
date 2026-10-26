@@ -30,7 +30,7 @@ public class Entity
     public int entityId,entityClass; public UnityEngine.Vector3 position; public bool IsDespawned,isUnloaded,markedForUnload,Dead,Spawned=true;
     public bool IsDead()=>Dead; public bool IsSpawned()=>Spawned;
 }
-public class EntityAlive : Entity { public EntityBuffs Buffs=new EntityBuffs(); }
+public class EntityAlive : Entity { public EntityBuffs Buffs=new EntityBuffs(); public bool IsSleeper,IsSleeping,IsSleeperPassive; }
 public class EntityPlayer : EntityAlive { public bool IsSpectator; }
 public class EntityPlayerLocal : EntityPlayer { }
 public class EntityZombie : EntityAlive { }

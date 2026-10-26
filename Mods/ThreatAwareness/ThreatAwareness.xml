@@ -13,8 +13,10 @@
   </Levels>
   <!-- Both categories also require the entity class's IsEnemyEntity flag.
        Players, traders, friendly NPCs and passive animals never qualify.
+       Dormant sleeping/passive hostiles are ignored unless includeSleepers=true.
+       Awake hostiles still qualify when stationary.
        Exclude uses exact entity class names; it does not include derived classes. -->
-  <Eligibility zombies="true" hostileAnimals="true">
+  <Eligibility zombies="true" hostileAnimals="true" includeSleepers="false">
     <!-- <Exclude class="animalSnake" /> -->
   </Eligibility>
 </ThreatAwareness>

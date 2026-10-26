@@ -158,6 +158,8 @@ namespace ThreatAwareness
             {
                 var entity = nearby[i] as EntityAlive;
                 if (entity == null || entity is EntityPlayer || entity.IsDead() || entity.IsDespawned || entity.isUnloaded || entity.markedForUnload || !entity.IsSpawned()) continue;
+                // IsSleeper marks a POI origin even after waking; filter current dormancy only.
+                if (!settings.IncludeSleepers && (entity.IsSleeping || entity.IsSleeperPassive)) continue;
                 var cls = EntityClass.GetEntityClass(entity.entityClass);
                 if (cls == null || !cls.bIsEnemyEntity || settings.ExcludedClasses.Contains(cls.entityClassName)) continue;
                 if (!(settings.Zombies && entity is EntityZombie) && !(settings.HostileAnimals && entity is EntityAnimal)) continue;
