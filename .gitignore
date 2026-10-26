@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+artifacts/
+.vs/
+.idea/
+*.user
+*.suo
+*.dll
+*.pdb
+*.zip
+*.log
+output_log*.txt
+.env
+.env.*
+!.env.example
+**/preferences.xml*
+**/serverconfig*.xml

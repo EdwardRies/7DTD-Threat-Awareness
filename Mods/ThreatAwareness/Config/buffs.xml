@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configs>
+  <append xpath="/buffs">
+    <!-- All icons are used in vanilla v3.3 buffs. No effects, sounds or animation. -->
+    <buff name="taCaution" name_key="Threat Awareness: Caution" description_key="An eligible hostile is nearby. This indicator does not guarantee safety." icon="ui_game_symbol_animal_tracker" icon_color="255,220,0" icon_blink="false" remove_on_death="true">
+      <stack_type value="ignore" />
+      <duration value="0" />
+      <display_value_key value="Caution" />
+      <display_value value="xxx" />
+    </buff>
+    <buff name="taWarning" name_key="Threat Awareness: Warning" description_key="An eligible hostile is close. This indicator does not guarantee safety." icon="ui_game_symbol_zombie" icon_color="255,140,0" icon_blink="false" remove_on_death="true">
+      <stack_type value="ignore" />
+      <duration value="0" />
+      <display_value_key value="Warning" />
+      <display_value value="xxx" />
+    </buff>
+    <buff name="taHighWarning" name_key="Threat Awareness: High Warning" description_key="An eligible hostile is very close. This indicator does not guarantee safety." icon="ui_game_symbol_berserker" icon_color="255,55,55" icon_blink="false" remove_on_death="true">
+      <stack_type value="ignore" />
+      <duration value="0" />
+      <display_value_key value="High Warning" />
+      <display_value value="xxx" />
+    </buff>
+    <buff name="taDanger" name_key="Threat Awareness: DANGER" description_key="An eligible hostile is in immediate proximity. This indicator does not guarantee safety." icon="ui_game_symbol_skull" icon_color="255,55,55" icon_blink="false" remove_on_death="true">
+      <stack_type value="ignore" />
+      <duration value="0" />
+      <display_value_key value="DANGER" />
+      <display_value value="xxx" />
+    </buff>
+  </append>
+</configs>

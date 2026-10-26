@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Reloaded within one second. Invalid changes retain the last valid settings.
+     Player preferences override defaultEnabled; enabled=false overrides everyone.
+     intervalSeconds: 0.1..60; hysteresisMeters: 0..2; meters: >0..250.
+     Thresholds must be strictly descending, including disabled levels. -->
+<ThreatAwareness enabled="true" defaultEnabled="false" intervalSeconds="1" hysteresisMeters="1">
+  <Levels>
+    <Caution enabled="true" meters="100" />
+    <Warning enabled="true" meters="50" />
+    <HighWarning enabled="true" meters="25" />
+    <Danger enabled="true" meters="10" />
+  </Levels>
+  <!-- Both categories also require the entity class's IsEnemyEntity flag.
+       Players, traders, friendly NPCs and passive animals never qualify.
+       Exclude uses exact entity class names; it does not include derived classes. -->
+  <Eligibility zombies="true" hostileAnimals="true">
+    <!-- <Exclude class="animalSnake" /> -->
+  </Eligibility>
+</ThreatAwareness>

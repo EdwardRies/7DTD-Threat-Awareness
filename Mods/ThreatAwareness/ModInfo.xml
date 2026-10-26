@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xml>
+  <Name value="ThreatAwareness" />
+  <DisplayName value="Threat Awareness" />
+  <Description value="Server-side visual proximity warnings with individual player preferences." />
+  <Author value="Threat Awareness contributors" />
+  <Version value="0.1.2" />
+</xml>
